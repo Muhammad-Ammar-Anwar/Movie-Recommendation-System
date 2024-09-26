@@ -72,4 +72,4 @@ This project is a movie recommendation system that uses TMDb data and content ba
 ### Author
 
 **Muhammad Ammar Anwar**  
-[GitHub Profile]([https://github.com/your-username](https://github.com/Muhammad-Ammar-Anwar))
+https://github.com/your-username](https://github.com/Muhammad-Ammar-Anwar
