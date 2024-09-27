@@ -65,6 +65,9 @@ This project is a movie recommendation system that uses TMDb data and content ba
 2. Click "Recommend" to get a list of similar movies.
 3. Movie recommendations are displayed along with their titles.
 
+![Frontend Screenshot](https://github.com/Muhammad-Ammar-Anwar/Movie-Recommendation-System/raw/main/frontend.png)
+
+
 
 
 ---
