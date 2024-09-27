@@ -2,6 +2,9 @@
 
 This project is a movie recommendation system that uses TMDb data and content based filtering, with a simple and interactive frontend powered by **Streamlit**. It preprocesses movie data such as genres, cast, crew, and keywords, and recommends similar movies based on cosine similarity.
 
+![Frontend Screenshot](https://github.com/Muhammad-Ammar-Anwar/Movie-Recommendation-System/blob/main/frontend%202.png)
+
+
 ## Features
 
 - **Data Processing**: Extracts and processes movie metadata (genres, cast, crew, keywords).
@@ -65,7 +68,7 @@ This project is a movie recommendation system that uses TMDb data and content ba
 2. Click "Recommend" to get a list of similar movies.
 3. Movie recommendations are displayed along with their titles.
 
-![Frontend Screenshot](https://github.com/Muhammad-Ammar-Anwar/Movie-Recommendation-System/raw/main/frontend.png)
+
 
 
 
