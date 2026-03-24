@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CineMatch — Movie Recommender</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0c0c0e;
+    --surface: #141416;
+    --surface2: #1c1c1f;
+    --border: #252528;
+    --border-hover: #3a3a3e;
+    --text-primary: #f0f0f0;
+    --text-secondary: #888;
+    --text-muted: #555;
+    --accent: #e8d5a3;
+    --accent-dim: rgba(232,213,163,0.12);
+    --accent-glow: rgba(232,213,163,0.06);
+    --red: #c0392b;
+    --radius: 6px;
+    --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Subtle grain */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.5;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 48px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: rgba(12,12,14,0.92);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    border: 1.5px solid var(--accent);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent);
+    font-size: 14px;
+  }
+
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    letter-spacing: 0.02em;
+    color: var(--text-primary);
+  }
+
+  .logo-text span {
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  .header-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 20px;
+  }
+
+  /* Hero */
+  .hero {
+    padding: 80px 48px 56px;
+    max-width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .hero-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .hero-label::before {
+    content: '';
+    display: block;
+    width: 24px; height: 1px;
+    background: var(--accent);
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(36px, 5vw, 54px);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--text-primary);
+    margin-bottom: 18px;
+    letter-spacing: -0.01em;
+  }
+
+  .hero h1 em {
+    color: var(--accent);
+    font-style: italic;
+  }
+
+  .hero p {
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 1.7;
+    font-weight: 300;
+    max-width: 480px;
+    text-align: center;
+  }
+
+  /* Main content */
+  .main {
+    padding: 0 48px 80px;
+  }
+
+  /* Search section */
+  .search-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 32px 36px;
+    margin-bottom: 48px;
+  }
+
+  .search-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .search-row {
+    display: flex;
+    gap: 14px;
+    align-items: stretch;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+  }
+
+  .search-wrap input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 48px 14px 18px;
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: var(--transition);
+  }
+
+  .search-wrap input::placeholder { color: var(--text-muted); }
+
+  .search-wrap input:focus {
+    border-color: var(--accent);
+    background: #181818;
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .search-clear {
+    position: absolute;
+    right: 14px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none;
+    color: var(--text-muted);
+    cursor: pointer; font-size: 18px;
+    display: none;
+    line-height: 1;
+    padding: 2px;
+    transition: color var(--transition);
+  }
+
+  .search-clear:hover { color: var(--text-primary); }
+  .search-clear.visible { display: block; }
+
+  .btn-recommend {
+    background: var(--accent);
+    color: #0c0c0e;
+    border: none;
+    border-radius: var(--radius);
+    padding: 0 28px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-recommend:hover {
+    background: #f0dfa8;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(232,213,163,0.22);
+  }
+
+  .btn-recommend:active { transform: translateY(0); }
+
+  .btn-recommend:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .btn-recommend svg {
+    transition: transform var(--transition);
+  }
+
+  .btn-recommend:hover svg {
+    transform: translateX(3px);
+  }
+
+  /* Dropdown */
+  .dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0; right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border-hover);
+    border-radius: var(--radius);
+    max-height: 260px;
+    overflow-y: auto;
+    z-index: 200;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    display: none;
+  }
+
+  .dropdown.open { display: block; }
+
+  .dropdown::-webkit-scrollbar { width: 4px; }
+  .dropdown::-webkit-scrollbar-track { background: transparent; }
+  .dropdown::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 2px; }
+
+  .dropdown-item {
+    padding: 11px 18px;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    transition: background var(--transition), color var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dropdown-item:last-child { border-bottom: none; }
+
+  .dropdown-item:hover, .dropdown-item.active {
+    background: var(--accent-dim);
+    color: var(--text-primary);
+  }
+
+  .dropdown-item.active .item-check { display: block; }
+  .item-check { display: none; color: var(--accent); font-size: 12px; margin-left: auto; }
+
+  .item-idx {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    min-width: 30px;
+  }
+
+  .no-results {
+    padding: 24px 18px;
+    color: var(--text-muted);
+    font-size: 13px;
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Selected movie pill */
+  .selected-pill {
+    margin-top: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(232,213,163,0.2);
+    padding: 6px 14px 6px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--accent);
+    display: none;
+  }
+
+  .selected-pill.show { display: inline-flex; }
+
+  .pill-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+
+
+  /* Results */
+  .results-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .results-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .results-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+  }
+
+  /* Movie card */
+  .movie-card {
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: cardIn 0.4s ease forwards;
+  }
+
+  @keyframes cardIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .movie-card:nth-child(1)  { animation-delay: 0.05s; }
+  .movie-card:nth-child(2)  { animation-delay: 0.09s; }
+  .movie-card:nth-child(3)  { animation-delay: 0.13s; }
+  .movie-card:nth-child(4)  { animation-delay: 0.17s; }
+  .movie-card:nth-child(5)  { animation-delay: 0.21s; }
+  .movie-card:nth-child(6)  { animation-delay: 0.25s; }
+  .movie-card:nth-child(7)  { animation-delay: 0.29s; }
+  .movie-card:nth-child(8)  { animation-delay: 0.33s; }
+  .movie-card:nth-child(9)  { animation-delay: 0.37s; }
+  .movie-card:nth-child(10) { animation-delay: 0.41s; }
+
+  .poster-wrap {
+    position: relative;
+    aspect-ratio: 2/3;
+    overflow: hidden;
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .poster-wrap img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.45s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .movie-card:hover .poster-wrap img {
+    transform: scale(1.04);
+  }
+
+  .poster-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(12,12,14,0.95) 0%, rgba(12,12,14,0.4) 40%, transparent 70%);
+    opacity: 0;
+    transition: opacity var(--transition);
+    display: flex;
+    align-items: flex-end;
+    padding: 14px;
+  }
+
+  .movie-card:hover .poster-overlay {
+    opacity: 1;
+  }
+
+  .overlay-btn {
+    background: var(--accent);
+    color: #0c0c0e;
+    border: none;
+    border-radius: 4px;
+    padding: 7px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    width: 100%;
+    pointer-events: none;
+  }
+
+  .poster-rank {
+    position: absolute;
+    top: 10px; left: 10px;
+    background: rgba(12,12,14,0.85);
+    backdrop-filter: blur(4px);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+  }
+
+  .poster-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+  }
+
+  .spinner {
+    width: 24px; height: 24px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .movie-title {
+    margin-top: 10px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    transition: color var(--transition);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .movie-card:hover .movie-title {
+    color: var(--text-primary);
+  }
+
+  .movie-rank-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    letter-spacing: 0.06em;
+  }
+
+  /* State displays */
+  .state-empty, .state-loading, .state-error {
+    padding: 64px 0;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .state-icon {
+    font-size: 32px;
+    opacity: 0.25;
+  }
+
+  .state-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    color: var(--text-secondary);
+  }
+
+  .state-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    max-width: 340px;
+    line-height: 1.6;
+  }
+
+  .loading-bar {
+    width: 200px; height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+
+  .loading-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 1px;
+    animation: loadBar 1.6s ease-in-out infinite;
+  }
+
+  @keyframes loadBar {
+    0%   { width: 0%; margin-left: 0%; }
+    50%  { width: 60%; margin-left: 20%; }
+    100% { width: 0%; margin-left: 100%; }
+  }
+
+  .error-msg {
+    background: rgba(192,57,43,0.1);
+    border: 1px solid rgba(192,57,43,0.25);
+    border-radius: var(--radius);
+    padding: 12px 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: #e07070;
+    max-width: 400px;
+    text-align: left;
+    line-height: 1.6;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 40px 0;
+  }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 22px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  footer p {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+  }
+
+  footer p span { color: var(--text-secondary); }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .results-grid { grid-template-columns: repeat(3, 1fr); }
+    header, .hero, .main, footer { padding-left: 24px; padding-right: 24px; }
+    .hero { padding-top: 48px; }
+  }
+
+  @media (max-width: 600px) {
+    .results-grid { grid-template-columns: repeat(2, 1fr); }
+    .search-row { flex-direction: column; }
+    .btn-recommend { padding: 14px; justify-content: center; }
+    .api-row { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <rect x="1" y="1" width="5" height="5" stroke="currentColor" stroke-width="1.2"/>
+        <rect x="8" y="1" width="5" height="5" stroke="currentColor" stroke-width="1.2"/>
+        <rect x="1" y="8" width="5" height="5" stroke="currentColor" stroke-width="1.2"/>
+        <rect x="8" y="8" width="5" height="5" fill="currentColor"/>
+      </svg>
+    </div>
+    <div class="logo-text">Cine<span>Match</span></div>
+  </div>
+  <div class="header-tag">Content-Based Filtering</div>
+</header>
+
+<div class="hero">
+  <div class="hero-label">Film Discovery Engine</div>
+  <h1>Find your next <em>favourite film</em></h1>
+  <p>Select any movie from the catalogue and we'll surface ten thematically and structurally similar titles using vector similarity matching.</p>
+</div>
+
+<div class="main">
+
+  <div class="search-card">
+    <div class="search-label">Select a Movie</div>
+    <div class="search-row">
+      <div class="search-wrap" id="searchWrap">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Search movie title…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="search-clear" id="clearBtn" title="Clear">×</button>
+        <div class="dropdown" id="dropdown"></div>
+      </div>
+      <button class="btn-recommend" id="recommendBtn" disabled>
+        Get Recommendations
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M3 7H11M11 7L8 4M11 7L8 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="selected-pill" id="selectedPill">
+      <span class="pill-dot"></span>
+      <span id="pillText"></span>
+    </div>
+
+
+  </div>
+
+  <!-- Results area -->
+  <div id="resultsArea">
+    <div class="state-empty">
+      <div class="state-icon">◫</div>
+      <div class="state-title">No results yet</div>
+      <div class="state-sub">Search and select a movie above, then click "Get Recommendations."</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <p>CineMatch &mdash; Powered by <span>TMDB API</span> &amp; Cosine Similarity</p>
+  <p>Results based on semantic &amp; genre vectors</p>
+</footer>
+
+<script>
+// Movie list from Python backend (same catalogue as Streamlit / similarity.pkl)
+const API_BASE = '';
+let ALL_MOVIES = [];
+let moviesReady = false;
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let selectedMovie = null;
+let filteredMovies = [];
+let highlightIndex = -1;
+
+const searchInput   = document.getElementById('searchInput');
+const clearBtn      = document.getElementById('clearBtn');
+const dropdown      = document.getElementById('dropdown');
+const recommendBtn  = document.getElementById('recommendBtn');
+const selectedPill  = document.getElementById('selectedPill');
+const pillText      = document.getElementById('pillText');
+const resultsArea   = document.getElementById('resultsArea');
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/"/g, '&quot;');
+}
+
+async function loadMovies() {
+  const res = await fetch(`${API_BASE}/api/movies`);
+  if (!res.ok) throw new Error('Could not load movie catalogue');
+  ALL_MOVIES = await res.json();
+  moviesReady = true;
+}
+
+function movieCatalogIndex(m) {
+  return ALL_MOVIES.findIndex(x => x.title === m.title && x.movie_id === m.movie_id);
+}
+
+// ─── Search logic ─────────────────────────────────────────────────────────────
+function filterMovies(query) {
+  if (!moviesReady || !ALL_MOVIES.length) return [];
+  if (!query.trim()) return ALL_MOVIES.slice(0, 8);
+  const q = query.toLowerCase();
+  return ALL_MOVIES
+    .filter(m => m.title.toLowerCase().includes(q))
+    .slice(0, 12);
+}
+
+function renderDropdown(items) {
+  if (!items.length) {
+    dropdown.innerHTML = `<div class="no-results">No matches found</div>`;
+  } else {
+    dropdown.innerHTML = items.map((m, i) => {
+      const catIdx = movieCatalogIndex(m);
+      const num = (catIdx >= 0 ? catIdx : i) + 1;
+      return `
+      <div class="dropdown-item ${selectedMovie?.title === m.title ? 'active' : ''}"
+           data-idx="${i}" data-id="${m.movie_id}">
+        <span class="item-idx">${String(num).padStart(3,'0')}</span>
+        ${m.title.replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+        <span class="item-check">✓</span>
+      </div>`;
+    }).join('');
+
+    dropdown.querySelectorAll('.dropdown-item').forEach(el => {
+      el.addEventListener('mousedown', e => {
+        e.preventDefault();
+        const id = parseInt(el.dataset.id, 10);
+        const movie = ALL_MOVIES.find(x => x.movie_id === id);
+        if (movie) selectMovie(movie.title, id);
+      });
+    });
+  }
+  dropdown.classList.add('open');
+}
+
+function selectMovie(title, id) {
+  selectedMovie = { title, movie_id: id };
+  searchInput.value = title;
+  dropdown.classList.remove('open');
+  clearBtn.classList.add('visible');
+  pillText.textContent = title;
+  selectedPill.classList.add('show');
+  recommendBtn.disabled = false;
+  highlightIndex = -1;
+}
+
+function clearSearch() {
+  selectedMovie = null;
+  searchInput.value = '';
+  dropdown.classList.remove('open');
+  clearBtn.classList.remove('visible');
+  selectedPill.classList.remove('show');
+  recommendBtn.disabled = true;
+  searchInput.focus();
+}
+
+searchInput.addEventListener('input', e => {
+  const val = e.target.value;
+  clearBtn.classList.toggle('visible', val.length > 0);
+
+  if (selectedMovie && val !== selectedMovie.title) {
+    selectedMovie = null;
+    recommendBtn.disabled = true;
+    selectedPill.classList.remove('show');
+  }
+
+  filteredMovies = filterMovies(val);
+  renderDropdown(filteredMovies);
+  highlightIndex = -1;
+});
+
+searchInput.addEventListener('focus', () => {
+  filteredMovies = filterMovies(searchInput.value);
+  renderDropdown(filteredMovies);
+});
+
+searchInput.addEventListener('blur', () => {
+  setTimeout(() => dropdown.classList.remove('open'), 150);
+});
+
+searchInput.addEventListener('keydown', e => {
+  const items = dropdown.querySelectorAll('.dropdown-item');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    highlightIndex = Math.min(highlightIndex + 1, items.length - 1);
+    updateHighlight(items);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    highlightIndex = Math.max(highlightIndex - 1, 0);
+    updateHighlight(items);
+  } else if (e.key === 'Enter' && highlightIndex >= 0) {
+    const el = items[highlightIndex];
+    if (el) {
+      const id = parseInt(el.dataset.id, 10);
+      const movie = ALL_MOVIES.find(x => x.movie_id === id);
+      if (movie) selectMovie(movie.title, id);
+    }
+  } else if (e.key === 'Escape') {
+    dropdown.classList.remove('open');
+  }
+});
+
+function updateHighlight(items) {
+  items.forEach((el, i) => el.classList.toggle('active', i === highlightIndex));
+  if (items[highlightIndex]) {
+    items[highlightIndex].scrollIntoView({ block: 'nearest' });
+  }
+}
+
+clearBtn.addEventListener('click', clearSearch);
+
+async function recommend() {
+  if (!selectedMovie || !moviesReady) return;
+
+  showLoading();
+  recommendBtn.disabled = true;
+  recommendBtn.textContent = 'Fetching…';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/recommend`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: selectedMovie.title }),
+    });
+    const errText = await res.text();
+    if (!res.ok) {
+      let detail = errText;
+      try {
+        const j = JSON.parse(errText);
+        detail = j.detail || errText;
+      } catch (_) {}
+      throw new Error(typeof detail === 'string' ? detail : 'Request failed');
+    }
+    const data = JSON.parse(errText);
+    const recs = data.recommendations || [];
+    showResults(recs);
+  } catch (err) {
+    showError(err.message || 'Could not get recommendations.');
+  } finally {
+    recommendBtn.disabled = false;
+    recommendBtn.innerHTML = `Get Recommendations
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M3 7H11M11 7L8 4M11 7L8 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>`;
+  }
+}
+
+recommendBtn.addEventListener('click', recommend);
+
+// ─── UI States ────────────────────────────────────────────────────────────────
+function showLoading() {
+  resultsArea.innerHTML = `
+    <div class="state-loading">
+      <div class="state-icon">◫</div>
+      <div class="state-title">Analysing similarity matrix…</div>
+      <div class="loading-bar"><div class="loading-fill"></div></div>
+      <div class="state-sub">Fetching posters and metadata from TMDB</div>
+    </div>`;
+}
+
+function showError(msg) {
+  resultsArea.innerHTML = `
+    <div class="state-error">
+      <div class="state-icon">⊘</div>
+      <div class="state-title">Something went wrong</div>
+      <div class="error-msg">${escapeHtml(msg)}</div>
+    </div>`;
+}
+
+function showResults(recs) {
+  const html = `
+    <div class="results-header">
+      <div class="results-title">Recommendations for <em style="font-family:'Playfair Display',serif;font-style:italic;color:var(--accent)">${escapeHtml(selectedMovie.title)}</em></div>
+      <div class="results-count">${recs.length} titles</div>
+    </div>
+    <div class="results-grid">
+      ${recs.map((m, i) => `
+        <div class="movie-card" data-sel-id="${m.movie_id}">
+          <div class="poster-wrap">
+            ${m.poster_url
+              ? `<img src="${escapeHtml(m.poster_url)}" alt="${escapeHtml(m.title)}" loading="lazy" />`
+              : `<div class="poster-loading"><div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);text-align:center;padding:10px">${escapeHtml(m.title)}</div></div>`
+            }
+            <div class="poster-rank">#${i+1}</div>
+            <div class="poster-overlay">
+              <button class="overlay-btn">Select this film →</button>
+            </div>
+          </div>
+          <div class="movie-title">${escapeHtml(m.title)}</div>
+          <div class="movie-rank-label">Match #${i+1}</div>
+        </div>
+      `).join('')}
+    </div>`;
+
+  resultsArea.innerHTML = html;
+  resultsArea.querySelectorAll('.movie-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = parseInt(card.dataset.selId, 10);
+      const movie = ALL_MOVIES.find(x => x.movie_id === id);
+      if (movie) selectAndSearch(movie.title, id);
+    });
+  });
+}
+
+function selectAndSearch(title, id) {
+  selectMovie(title, id);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+searchInput.disabled = true;
+loadMovies()
+  .then(() => {
+    searchInput.disabled = false;
+    searchInput.placeholder = 'Search movie title…';
+  })
+  .catch((err) => {
+    resultsArea.innerHTML = `
+    <div class="state-error">
+      <div class="state-icon">⊘</div>
+      <div class="state-title">Could not load movies</div>
+      <div class="error-msg">${escapeHtml(err.message || String(err))}</div>
+    </div>`;
+  });
+</script>
+</body>
+</html>
