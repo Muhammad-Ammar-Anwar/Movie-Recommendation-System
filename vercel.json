@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/movie-recommender_2.html"
+    }
+  ]
+}

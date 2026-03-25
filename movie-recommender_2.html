@@ -682,7 +682,8 @@
 
 <script>
 // Movie list from Python backend (same catalogue as Streamlit / similarity.pkl)
-const API_BASE = '';
+// Local dev: Flask runs on 7860. For production, replace with your HF Space URL.
+const API_BASE = 'http://127.0.0.1:7860';
 let ALL_MOVIES = [];
 let moviesReady = false;
 
@@ -720,11 +721,11 @@ function movieCatalogIndex(m) {
 // ─── Search logic ─────────────────────────────────────────────────────────────
 function filterMovies(query) {
   if (!moviesReady || !ALL_MOVIES.length) return [];
-  if (!query.trim()) return ALL_MOVIES.slice(0, 8);
+  if (!query.trim()) return ALL_MOVIES.slice(0, 100);
   const q = query.toLowerCase();
   return ALL_MOVIES
     .filter(m => m.title.toLowerCase().includes(q))
-    .slice(0, 12);
+    .slice(0, 100);
 }
 
 function renderDropdown(items) {
