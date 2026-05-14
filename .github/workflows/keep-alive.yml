@@ -12,11 +12,12 @@ jobs:
     steps:
       - name: Ping Backend with Retry
         run: |
+          echo "Workflow started at $(date)"
+
           for i in {1..3}; do
             curl -f https://ammaranwar-movie-recommendation-backend.hf.space/keep-alive && break
             echo "Retry $i failed..."
             sleep 10
           done
 
-
-          
+          echo "Workflow finished"
